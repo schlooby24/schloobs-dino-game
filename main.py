@@ -2,6 +2,7 @@ import pygame
 import os
 import random
 from random import randint
+from sys import exit
 
 pygame.init()
 pygame.display.set_caption('Chrome Dino Ripoff by Schlooby ♥')
