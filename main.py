@@ -1,5 +1,6 @@
 import pygame
 import os
+import random
 from random import randint
 
 pygame.init()
@@ -10,6 +11,20 @@ pygame.display.set_icon(pygame.image.load(os.path.join("assets/dino", "DinoRun1.
 
 WINDOW_HEIGHT, WINDOW_WIDTH = 600, 1100
 SCREEN = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
+
+failure_list = [
+    'Ouch!',
+    'Oof!',
+    'Zoo wee mama!',
+    'Aw, man!',
+    'Aw, Beans!',
+    'You got fucked, bro.',
+    'Yikes!',
+    'That sucked...',
+    'No don\'t do that!',
+    'Rest in R.I.P.;',
+    'Press F to pay respects.'
+]
 
 
 class Assets:
@@ -35,10 +50,13 @@ class Assets:
         pygame.image.load(os.path.join("assets/dino", "DinoDead.png"))
     ]
 
-    LOW_OBSTACLES = [
+    LOW_OBSTACLES_BIG = [
         pygame.image.load(os.path.join("assets/cactus", "LargeCactus1.png")),
         pygame.image.load(os.path.join("assets/cactus", "LargeCactus2.png")),
-        pygame.image.load(os.path.join("assets/cactus", "LargeCactus3.png")),
+        pygame.image.load(os.path.join("assets/cactus", "LargeCactus3.png"))
+    ]
+
+    LOW_OBSTACLES_SMALL = [
         pygame.image.load(os.path.join("assets/cactus", "SmallCactus1.png")),
         pygame.image.load(os.path.join("assets/cactus", "SmallCactus2.png")),
         pygame.image.load(os.path.join("assets/cactus", "SmallCactus3.png"))
@@ -80,8 +98,8 @@ class Dinosaur:
         self.dino_duck = False
 
         self.step_index = 0
-        self.image = self.run_img[0]
-        self.player_rect = self.image.get_rect()
+        self.img = self.run_img[0]
+        self.player_rect = self.img.get_rect()
         self.jump_v = self.JUMP_V
         self.player_rect.x = self.X_POS
         self.player_rect.y = self.Y_POS
@@ -109,14 +127,14 @@ class Dinosaur:
 
 
     def run(self):
-        self.image = self.run_img[self.step_index // 5]
-        self.player_rect = self.image.get_rect()
+        self.img = self.run_img[self.step_index // 5]
+        self.player_rect = self.img.get_rect()
         self.player_rect.x = self.X_POS
         self.player_rect.y = self.Y_POS
         self.step_index += 1
 
     def jump(self):
-        self.image = self.jump_img
+        self.img = self.jump_img
         if self.dino_jump:
             self.player_rect.y -= self.jump_v * 4.20
             self.jump_v -= 0.8
@@ -125,14 +143,57 @@ class Dinosaur:
             self.jump_v = self.JUMP_V
 
     def duck(self):
-        self.image = self.duck_img[self.step_index // 5]
-        self.player_rect = self.image.get_rect()
+        self.img = self.duck_img[self.step_index // 5]
+        self.player_rect = self.img.get_rect()
         self.player_rect.x = self.X_POS
         self.player_rect.y = self.Y_POS_DUCK
         self.step_index += 1
 
     def draw(self, SCREEN=SCREEN):
-        SCREEN.blit(self.image, (self.player_rect.x, self.player_rect.y))
+        SCREEN.blit(self.img, (self.player_rect.x, self.player_rect.y))
+
+
+class Obstacle:
+    def __init__(self, img, type):
+        self.img = img
+        self.type = type
+        self.rect = self.img[self.type].get_rect()
+        self.rect.x = WINDOW_WIDTH
+
+    def update(self):
+        self.rect.x -= move_speed
+        if self.rect.x < -self.rect.width:
+            obstacles.pop()
+
+    def draw(self, SCREEN=SCREEN):
+        SCREEN.blit(self.img[self.type], self.rect)
+
+
+class smallCactus(Obstacle):
+    def __init__(self, img):
+        self.type = randint(0, 2)
+        super().__init__(img, self.type)
+        self.rect.y = 325
+
+
+class bigCactus(Obstacle):
+    def __init__(self, img):
+        self.type = randint(0, 2)
+        super().__init__(img, self.type)
+        self.rect.y = 300
+
+
+class Bird(Obstacle):
+    def __init__(self, img):
+        self.type = 0
+        super().__init__(img, self.type)
+        self.rect.y = 250
+        self.index = 0
+    def draw(self, SCREEN=SCREEN):
+        if self.index == 9:
+            self.index = 0
+        SCREEN.blit(self.img[self.index // 5], self.rect)
+        self.index += 1
 
 
 class Cloud:
@@ -154,17 +215,19 @@ class Cloud:
 
 
 def main():
-    global move_speed, bg_x_pos, bg_y_pos, score
+    global move_speed, bg_x_pos, bg_y_pos, score, obstacles
     run = True
     clock = pygame.time.Clock()
     player = Dinosaur()
     cloud = Cloud()
     cloud2 = Cloud()
+    obstacles = []
     move_speed = 14
     bg_x_pos = 0
     bg_y_pos = 380
     score = 0
     font = pygame.font.SysFont('comic sans ms', 24)
+    deaths = 0
 
     def keepScore():
         global score, move_speed
@@ -191,7 +254,8 @@ def main():
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                run = False
+                pygame.quit()
+                exit()
 
         SCREEN.fill((245,245,245))
         userInput = pygame.key.get_pressed()
@@ -207,6 +271,22 @@ def main():
         cloud2.draw()
         cloud2.update()
 
+        if len(obstacles) == 0:
+            if randint(0, 2) == 0:
+                obstacles.append(smallCactus(Assets.LOW_OBSTACLES_SMALL))
+            elif randint(0, 2) == 1:
+                obstacles.append(bigCactus(Assets.LOW_OBSTACLES_BIG))
+            elif randint(0, 2) == 2:
+                obstacles.append(Bird(Assets.HIGH_OBSTACLES))
+
+        for o in obstacles:
+            o.draw()
+            o.update()
+            if player.player_rect.colliderect(o.rect):
+                pygame.time.delay(2000)
+                deaths += 1
+                menu(deaths)
+
         keepScore()
 
 
@@ -214,4 +294,36 @@ def main():
         pygame.display.update()
 
 
-main()
+
+def menu(deaths):
+    global points
+    run = True
+    failureText = random.choice(failure_list)
+
+    while run:
+        SCREEN.fill((245,245,245))
+        font = pygame.font.SysFont('comic sans ms', 30)
+
+        if deaths == 0:
+            text = font.render('Press the any key...', True, (10,10,10))
+        elif deaths >= 1:
+            text = font.render(f'{failureText} Try again?', True, (10, 10, 10))
+            scoreText = font.render(f'Score: {score}', True, (10, 10, 10))
+            scoreRect = scoreText.get_rect()
+            scoreRect.center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2 + 50)
+            SCREEN.blit(scoreText, scoreRect)
+        textRect = text.get_rect()
+        textRect.center = (WINDOW_WIDTH // 2, WINDOW_HEIGHT // 2)
+        SCREEN.blit(text, textRect)
+        SCREEN.blit(Assets.RUNNING[0], (WINDOW_WIDTH // 2 - 20, WINDOW_HEIGHT // 2 - 140))
+        pygame.display.update()
+
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                exit()
+            if event.type == pygame.KEYDOWN:
+                main()
+
+menu(0)
