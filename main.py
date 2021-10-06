@@ -154,7 +154,7 @@ class Cloud:
 
 
 def main():
-    global move_speed, bg_x_pos, bg_y_pos
+    global move_speed, bg_x_pos, bg_y_pos, score
     run = True
     clock = pygame.time.Clock()
     player = Dinosaur()
@@ -163,6 +163,19 @@ def main():
     move_speed = 14
     bg_x_pos = 0
     bg_y_pos = 380
+    score = 0
+    font = pygame.font.SysFont('comic sans ms', 24)
+
+    def keepScore():
+        global score, move_speed
+        score += 1
+        if score % 100 == 0:
+            move_speed += 1
+
+        text = font.render(f"Score: {score}", True, (10, 10, 10))
+        textField = text.get_rect()
+        textField.midright = (1050, 50)
+        SCREEN.blit(text, textField)
 
     def bground():
         global bg_x_pos, bg_y_pos
@@ -193,6 +206,8 @@ def main():
 
         cloud2.draw()
         cloud2.update()
+
+        keepScore()
 
 
         clock.tick(30)
