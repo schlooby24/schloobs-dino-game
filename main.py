@@ -97,10 +97,10 @@ class Dinosaur:
         if self.step_index >= 10:
             self.step_index = 0
 
-        if userInput[pygame.K_UP] and not self.dino_jump:
+        if (userInput[pygame.K_UP] or userInput[pygame.K_w]) and not self.dino_jump:
             self.dino_run, self.dino_duck = False, False
             self.dino_jump = True
-        elif userInput[pygame.K_DOWN] and not self.dino_jump:
+        elif (userInput[pygame.K_DOWN] or userInput[pygame.K_s]) and not self.dino_jump:
             self.dino_jump, self.dino_run = False, False
             self.dino_duck = True
         elif not (self.dino_jump or userInput[pygame.K_DOWN]):
@@ -144,8 +144,8 @@ class Cloud:
         self.height = self.img.get_height()
 
     def update(self):
-        self.x_pos -= move_speed
-        if self.x_pos < - self.x_pos:
+        self.x_pos -= move_speed * .69
+        if self.x_pos < -self.width:
             self.x_pos = WINDOW_WIDTH + randint(2500, 3000)
             self.y_pos = randint(50, 100)
 
@@ -154,12 +154,26 @@ class Cloud:
 
 
 def main():
-    global move_speed
+    global move_speed, bg_x_pos, bg_y_pos
     run = True
     clock = pygame.time.Clock()
     player = Dinosaur()
     cloud = Cloud()
+    cloud2 = Cloud()
     move_speed = 14
+    bg_x_pos = 0
+    bg_y_pos = 380
+
+    def bground():
+        global bg_x_pos, bg_y_pos
+        bg_img = Assets.BG[0]
+        img_width = bg_img.get_width()
+        SCREEN.blit(bg_img, (bg_x_pos, bg_y_pos))
+        SCREEN.blit(bg_img, (img_width + bg_x_pos, bg_y_pos))
+        if bg_x_pos <= -img_width:
+            SCREEN.blit(bg_img, (img_width + bg_x_pos, bg_y_pos))
+            bg_x_pos = 0
+        bg_x_pos -= move_speed
 
     while run:
         for event in pygame.event.get():
@@ -172,8 +186,13 @@ def main():
         player.draw()
         player.update(userInput)
 
+        bground()
+
         cloud.draw()
         cloud.update()
+
+        cloud2.draw()
+        cloud2.update()
 
 
         clock.tick(30)
